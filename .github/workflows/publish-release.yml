@@ -1,12 +1,15 @@
 name: Publish Release
 
 on:
+  workflow_dispatch:
   release:
     types: [published]
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -15,10 +18,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: |
-          rm -f .npmrc ~/.npmrc
           npm install
 
       - name: Build project
