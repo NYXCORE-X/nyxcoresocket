@@ -1,140 +1,94 @@
 # NYXCORE Socket
 
-**Created by NYXCORE**
+[![npm version](https://img.shields.io/npm/v/nyxcoresocket)](https://www.npmjs.com/package/nyxcoresocket)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-NYXCORE Socket is a complete source package for a WhatsApp Web multi-device
-socket, with `sendGroupStatus()` added to the socket API. It includes the
-connection, authentication, encryption, message, media, group, community,
-newsletter, utility, and protocol-buffer source required by the library. It is
-not a thin adapter around another installed socket package.
-
-## Source and license
-
-The protocol implementation is based on the upstream Baileys `7.0.0-rc13`
-source. NYXCORE's group-status socket method and media relay handling are
-included in this package. The upstream MIT copyright and license terms are
-preserved in [`LICENSE`](./LICENSE); keep that file with source distributions.
-
-NYXCORE is not affiliated with or endorsed by WhatsApp. WhatsApp and related
-marks belong to their respective owners. Use accounts you control, respect
-group members' expectations, and follow applicable terms and laws.
-
-## Requirements
-
-- Node.js 20 or newer.
-- A WhatsApp account and your own authentication state for the bot.
-- A group JID ending in `@g.us` to send a group status.
-
-This repository contains no bot tokens, login credentials, or WhatsApp session
-files. Do not upload those files to GitHub.
+NYXCORE Socket is a multi-device WhatsApp Web socket package based on the
+Baileys `7.0.0-rc13` protocol source. It provides the standard socket,
+authentication, message, media, group, and protocol APIs, with an additional
+`sendGroupStatus()` method for publishing native WhatsApp group statuses.
 
 ## Install
-
-**Publication status:** this release is provided as source and a `.tgz` archive;
-it has not been published to the public npm registry. Therefore,
-`npm install nyxcoresocket` will not install this release yet.
-
-### Install from a GitHub repository
-
-After uploading the package contents to the **root** of a GitHub repository,
-install it in the environment that runs your bot:
-
-```sh
-npm install github:OWNER/REPOSITORY
-```
-
-Replace `OWNER` and `REPOSITORY` with the GitHub account or organization and
-repository name.
-
-### Install the included `.tgz` archive
-
-On a machine with Node.js and npm, install the downloaded archive from the bot
-project directory:
-
-```sh
-npm install ./nyxcoresocket-0.2.0.tgz
-```
-
-### Install without a terminal on your phone
-
-A phone can edit the GitHub files and start a deployment, but it cannot run
-`npm install` locally. For a bot hosted by a service that deploys from GitHub:
-
-1. Upload this package to its own GitHub repository as described below.
-2. Open the bot's `package.json` on GitHub and use **Edit**.
-3. Add this property inside the bot's existing `dependencies` object; do not
-   replace the rest of `package.json`:
-
-   ```json
-   "nyxcoresocket": "github:OWNER/REPOSITORY"
-   ```
-
-   Keep the surrounding JSON commas valid, and replace `OWNER` and
-   `REPOSITORY`.
-4. Commit the change, then trigger a deployment from the bot's hosting
-   dashboard. The host installs dependencies as part of its build; check its
-   build log for installation errors.
-
-When the bot uses CommonJS `require()`, its host must run Node.js 20.19+,
-22.12+, or a newer supported release. If the host does not install GitHub
-dependencies during deploy, use its package-management controls or web-based
-shell.
-
-### Install from the npm registry
-
-This release must first be published to npm before the registry command below
-will work. After it is published under the name `nyxcoresocket`, install it on
-the bot host with:
 
 ```sh
 npm install nyxcoresocket
 ```
 
-Publishing to npm is a separate release step; uploading the source to GitHub
-does not publish it to npm automatically.
+## Requirements
 
-## Connect it to an existing bot
+- Node.js 20 or newer.
+- For CommonJS `require()` of this ESM package: Node.js 20.19+, 22.12+, or a
+  newer supported release.
+- A WhatsApp account and authentication state that you control.
+- A group JID ending in `@g.us` when sending a group status.
 
-Import NYXCORE's socket factory:
+The package does not include WhatsApp login credentials or session files.
+Never commit your authentication directory or credentials to a public
+repository.
 
-```js
-const { default: makeWASocket } = require("nyxcoresocket");
-```
-
-For CommonJS `require()` with this ESM package, use Node.js 20.19+, 22.12+, or
-a newer supported release. On older Node releases, use ESM `import` syntax or
-upgrade Node.
-
-Use it with the bot's existing configuration and authentication flow:
+## Quick start
 
 ```js
-const sock = makeWASocket({
-  auth: state,
-  printQRInTerminal: false,
-});
+const {
+  default: makeWASocket,
+  useMultiFileAuthState,
+  fetchLatestBaileysVersion,
+} = require("nyxcoresocket");
+
+async function start() {
+  const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
+  const { version } = await fetchLatestBaileysVersion();
+
+  const sock = makeWASocket({
+    auth: state,
+    version,
+    printQRInTerminal: false,
+  });
+
+  sock.ev.on("creds.update", saveCreds);
+  sock.ev.on("connection.update", ({ connection }) => {
+    if (connection === "open") {
+      console.log("WhatsApp connected");
+    }
+  });
+
+  return sock;
+}
 ```
 
-The factory returns the library's normal socket methods and events, plus
-`sock.sendGroupStatus()`. Existing bot code can keep using its other
-authentication or message utilities. If that code imports utilities from
-`@whiskeysockets/baileys`, keep that package installed until those imports are
-changed too.
+Use your normal WhatsApp pairing or login flow. Wait for the socket connection
+to open before sending messages.
+
+For an ESM project:
+
+```js
+import makeWASocket, {
+  useMultiFileAuthState,
+  fetchLatestBaileysVersion,
+} from "nyxcoresocket";
+```
 
 ## Send a group status
 
-No extra bot command is required. Call the method from the existing status
-handler:
+`sendGroupStatus(groupJid, content, options?)` publishes a native group status.
+The destination group determines the audience; WhatsApp membership, privacy
+settings, and client behavior still apply.
+
+### Text
 
 ```js
-const sent = await sock.sendGroupStatus("120363000000000000@g.us", {
-  text: "Hello group",
-});
+const sent = await sock.sendGroupStatus(
+  "120363000000000000@g.us",
+  { text: "Hello group" },
+  { backgroundColor: "#25D366", font: 2 },
+);
 
-console.log("Sent status message:", sent.key.id);
+console.log("Status message ID:", sent.key.id);
 ```
 
-Supported content uses the same message generator as the rest of the socket,
-including text and media:
+`backgroundColor` and `font` are optional text styling options.
+
+### Image or video
 
 ```js
 await sock.sendGroupStatus(groupJid, {
@@ -148,29 +102,21 @@ await sock.sendGroupStatus(groupJid, {
 });
 ```
 
-The method checks that the destination is a group JID, generates the
-group-status envelope and message secret, uploads media through the socket,
-and relays the message to that group's participants. It returns the generated
-message object and ID.
+The socket generates the message, uploads media, wraps it in the group-status
+envelope, and relays it to the specified group. The method returns the
+generated message object. It throws if the destination is not a group JID or
+the socket is not logged in.
 
-The destination group determines the audience. WhatsApp membership, privacy,
-and client behavior still apply; the method does not add every contact as a
-recipient or save anyone's contacts.
+## Compatibility
 
-## API compatibility
+The protocol implementation is pinned to Baileys `7.0.0-rc13`. The package
+exports the socket factory and common authentication, message, type, binary,
+and protocol utilities. Keep dependencies that your application imports
+directly, and avoid mixing utilities from incompatible protocol versions.
 
-The package preserves the source library's standard exports, including its
-socket factory, authentication helpers, message utilities, types, binary
-helpers, and WhatsApp protocol definitions. See `src/`, `WAProto/`, and
-`lib/` for the full code.
+## Tests
 
-This source is pinned to `7.0.0-rc13` to match projects using that release.
-Changing the protocol source version can change APIs and WhatsApp behavior, so
-do not upgrade it independently of the bot's compatibility needs.
-
-## Build and tests
-
-On a computer or server with Node.js:
+From the package source directory:
 
 ```sh
 npm install
@@ -179,26 +125,17 @@ npm test
 npm run test:group-status
 ```
 
-The group-status unit tests verify the envelope and its 32-byte message
-secret. The full source tests cover the library's offline tests. They do not
-connect to a live WhatsApp account or prove how a particular phone app renders
-a post. That requires a real account and group that you control.
+The group-status tests check the message envelope and its 32-byte message
+secret. Offline tests do not connect to WhatsApp or verify how a particular
+WhatsApp client displays a status; test live behavior only with an account and
+group you control.
 
-## Upload the source to GitHub
+## License and attribution
 
-1. Extract the source ZIP.
-2. Create an empty GitHub repository.
-3. Upload the **contents** of the extracted `nyxcoresocket` folder to the
-   repository root. Include `package.json`, `src`, `lib`, `WAProto`,
-   `README.md`, and `LICENSE`.
-4. Commit the upload.
+NYXCORE Socket is released under the MIT License. The protocol source is based
+on Baileys `7.0.0-rc13`; retain the included license and copyright notices
+when redistributing source.
 
-This can be done from GitHub's website or mobile app. For
-`npm install github:OWNER/REPOSITORY` to work, `package.json` must be at the
-repository root. Uploading only the ZIP or `.tgz` makes the repository a
-file-download location, not an installable GitHub package. The archives can
-also be attached to a GitHub release after the source files are uploaded.
-
-## License
-
-MIT. Keep [`LICENSE`](./LICENSE) with the source and package.
+NYXCORE is not affiliated with or endorsed by WhatsApp. WhatsApp and related
+marks belong to their respective owners. Use accounts you control and follow
+applicable laws and WhatsApp's terms.
