@@ -1,7 +1,7 @@
 {
   "name": "@nyxcore/nyxcoresocket",
   "type": "module",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "NYXCORE's complete WhatsApp Web socket implementation with group-status support",
   "keywords": [
     "nyxcore",
