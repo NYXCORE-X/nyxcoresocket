@@ -1,17 +1,18 @@
 # NYXCORE Socket
 
-[![npm version](https://img.shields.io/npm/v/nyxcoresocket)](https://www.npmjs.com/package/nyxcoresocket)
+[![npm version](https://img.shields.io/npm/v/%40nyxcore%2Fnyxcoresocket?label=%40nyxcore%2Fnyxcoresocket)](https://www.npmjs.com/package/@nyxcore/nyxcoresocket)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
 NYXCORE Socket is a multi-device WhatsApp Web socket package based on the
 Baileys `7.0.0-rc13` protocol source. It provides the standard socket,
 authentication, message, media, group, and protocol APIs, with an additional
 `sendGroupStatus()` method for publishing native WhatsApp group statuses.
+The npm version badge above tracks the latest published release.
 
 ## Install
 
 ```sh
-npm install nyxcoresocket
+npm install @nyxcore/nyxcoresocket
 ```
 
 ## Requirements
@@ -33,7 +34,7 @@ const {
   default: makeWASocket,
   useMultiFileAuthState,
   fetchLatestBaileysVersion,
-} = require("nyxcoresocket");
+} = require("@nyxcore/nyxcoresocket");
 
 async function start() {
   const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
@@ -65,7 +66,7 @@ For an ESM project:
 import makeWASocket, {
   useMultiFileAuthState,
   fetchLatestBaileysVersion,
-} from "nyxcoresocket";
+} from "@nyxcore/nyxcoresocket";
 ```
 
 ## Send a group status
